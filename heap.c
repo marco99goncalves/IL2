@@ -11,7 +11,7 @@
 #include "collector.h"
 #include "globals.h"
 
-void heap_init(Heap* heap, unsigned int size, void (*collector)(List*)) {
+void heap_init(Heap* heap, unsigned int size, void (*collector)(List*, void*)) {
     heap->base = mmap(NULL, size, PROT_READ | PROT_WRITE,
                       MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
     heap->size = size;
@@ -37,12 +37,21 @@ void* my_malloc(unsigned int nbytes) {
         heap->top = heap->top + sizeof(_block_header) + nbytes;
         return p;
     } else {
-        printf("my_malloc: not enough space, performing GC...");
-        heap->collector(roots);
+        printf("my_malloc: not enough space, performing GC...\n");
+        heap->collector(roots, heap);
+        printf("FInishes GC :)\n");
         if (list_isempty(heap->freeb)) {
-            printf("my_malloc: not enough space after GC...");
-            return NULL;
+            printf("my_malloc: not enough space after GC...\n");
+            abort();
         }
+        printf("After list check\n");
         return list_getfirst(heap->freeb);
     }
+}
+
+void reset_freeb(Heap* heap) {
+    free_list(heap->freeb);
+    free(heap->freeb);
+    heap->freeb = (List*)malloc(sizeof(List));
+    list_init(heap->freeb);
 }

@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
             }
             fprintf(stdout, "tree size is %d\n", bistree_size(t));
             fprintf(stdout, "(inorder traversal)\n");
-            bistree_inorder(t);
+            // bistree_inorder(t);
         } else {  // remove nodes
             /* skip if there are no roots to manipulate */
             if (list_isempty(roots))
@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
             }
             fprintf(stdout, "tree size is %d\n", bistree_size(chosen));
             fprintf(stdout, "(inorder traversal)\n");
-            bistree_inorder(chosen);
+            // bistree_inorder(chosen);
         }
     }
     /* caught ^C ! */

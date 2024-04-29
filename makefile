@@ -38,7 +38,7 @@ EXE    = mutator
 
 CC     = gcc
 LL     = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -g
 LFLAGS =
 
 # *  Define the rules.                                                       *
@@ -57,7 +57,6 @@ clean:
 	-rm $(EXE)
 	-rm $(OBJFLS)
 
-# DO NOT DELETE THIS LINE -- make depend depends on it.
 
 mutator.o: bool.h globals.h list.h bistree.h bistree.c
 heap.o: heap.h globals.h heap.c
