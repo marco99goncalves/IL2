@@ -114,3 +114,22 @@ void free_list(List* list) {
         p = next;
     }
 }
+
+// void free_list(List* list) {
+//     if (list == NULL) {
+//         printf("List is NULL\n");
+//         return;
+//     }
+//     ListNode* p = list->first;
+//     ListNode* next;
+//     printf("Starting free_list, list->first: %p\n", (void*)p);
+//     printf("List size: %d\n", list->size);
+
+//     while (p != NULL) {
+//         next = p->next;
+//         printf("Freeing node at: %p, next node at: %p\n", (void*)p, (void*)next);
+//         free(p);
+//         p = next;
+//     }
+//     list->first = NULL;  // Ensure list is in a consistent state after freeing
+// }

@@ -18,10 +18,10 @@ typedef struct {
     char* top;
     char* limit;
     List* freeb;
-    void (*collector)(List*, void*);
+    void (*collector)(List*);
 } Heap;
 
-void heap_init(Heap* heap, unsigned int size, void (*collector)(List*, void*));
+void heap_init(Heap* heap, unsigned int size, void (*collector)(List*));
 
 void heap_destroy(Heap* heap);
 

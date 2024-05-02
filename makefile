@@ -36,9 +36,9 @@ EXE    = mutator
 
 # *  Define the compile and link options.                                    *
 
-CC     = gcc
-LL     = gcc
-CFLAGS = -Wall -g
+CC     = gcc #-fsanitize=address
+LL     = gcc #-fsanitize=address
+CFLAGS = -Wall #-g -fsanitize=address
 LFLAGS =
 
 # *  Define the rules.                                                       *
