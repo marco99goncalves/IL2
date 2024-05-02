@@ -22,6 +22,10 @@
 
 Heap* heap;
 List* roots;
+void* free_blocks;
+int insertedNodes;
+int removedNodes;
+int garbageCollections;
 
 static bool mutate;
 
@@ -42,12 +46,16 @@ int main(int argc, char** argv) {
 
     heap = (Heap*)malloc(sizeof(Heap));
     roots = (List*)malloc(sizeof(List));
+    insertedNodes = 0;
+    removedNodes = 0;
+    garbageCollections = 0;
 
-    heap_init(heap, HEAP_SIZE, mark_sweep_gc);
+    heap_init(heap, HEAP_SIZE);
     list_init(roots);
 
     srandom(getpid());
     mutate = true;
+
     while (mutate) {
         float toss = (float)random() / RAND_MAX;
         if (toss > threshold) {  // add nodes
@@ -60,11 +68,17 @@ int main(int argc, char** argv) {
             int number_nodes = MIN_NODES + random() % (MAX_NODES - MIN_NODES);
             for (int i = 0; i < number_nodes; i++) {
                 /* populate tree with keys between 0-100 */
-                bistree_insert(t, random() % MAX_KEY_VALUE);
+                int key = random() % MAX_KEY_VALUE;
+                // printf("Inserting %d\n", key);
+                if (bistree_insert(t, key)) {
+                    insertedNodes++;
+                }
             }
-            fprintf(stdout, "tree size is %d\n", bistree_size(t));
-            fprintf(stdout, "(inorder traversal)\n");
-            // bistree_inorder(t);
+
+            // fprintf(stdout, "inserted %d nodes\n", insertedNodes);
+            // fprintf(stdout, "tree size is %d\n", bistree_size(t));
+            // fprintf(stdout, "(inorder traversal)\n");
+            bistree_inorder(t);
         } else {  // remove nodes
             /* skip if there are no roots to manipulate */
             if (list_isempty(roots))
@@ -77,11 +91,13 @@ int main(int argc, char** argv) {
             for (int i = 0; i < number_tries; i++) {
                 /* remove key from tree if key exists in it */
                 /* this is checked in bistree_remove */
-                bistree_remove(chosen, random() % MAX_KEY_VALUE);
+                if (bistree_remove(chosen, random() % MAX_KEY_VALUE))
+                    removedNodes++;
             }
-            fprintf(stdout, "tree size is %d\n", bistree_size(chosen));
-            fprintf(stdout, "(inorder traversal)\n");
-            // bistree_inorder(chosen);
+            // fprintf(stdout, "removed %d nodes\n", removedNodes);
+            // fprintf(stdout, "tree size is %d\n", bistree_size(chosen));
+            // fprintf(stdout, "(inorder traversal)\n");
+            bistree_inorder(chosen);
         }
     }
     /* caught ^C ! */

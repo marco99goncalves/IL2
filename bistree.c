@@ -2,12 +2,11 @@
  * bistree.c
  */
 
-#include "bistree.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "bool.h"
+#include "bistree.h"
 #include "heap.h"
 
 void bistree_init(BisTree* tree) {
@@ -17,6 +16,8 @@ void bistree_init(BisTree* tree) {
 }
 
 bool bitreenode_lookup(BiTreeNode* node, int data) {
+    // printf("Looking for %d\n", data);
+    // printf("Node: %p\n", node);
     if (node == NULL)
         return false;
     if (data < node->data)
@@ -32,10 +33,20 @@ bool bistree_lookup(BisTree* tree, int data) {
 
 BiTreeNode* bitreenode_insert(BiTreeNode* node, int data) {
     if (node == NULL) {
+        // printf("Inserting node with value: %d\n", data);
         BiTreeNode* node = (BiTreeNode*)my_malloc(sizeof(BiTreeNode));
+        if (node == NULL) {
+            printf("well shit\n");
+            printf("Node: %p\n", node);
+            exit(1);
+        }
+
+        // printf("Node: %p\n", node);
         node->data = data;
+        // printf("Data: %d\n", node->data);
         node->left = NULL;
         node->right = NULL;
+        // printf("Everyhing okay\n");
         return node;
     } else if (data < node->data)
         node->left = bitreenode_insert(node->left, data);
@@ -67,7 +78,7 @@ BiTreeNode* bitreenode_remove(BiTreeNode* node, int data) {
             lnode = lnode->right;
         node->data = lnode->data;
         node->left = bitreenode_remove(node->left, lnode->data);
-        // free(lnode);
+        //   free(lnode);
     }
     return node;
 }

@@ -3,59 +3,108 @@
  */
 
 #include <stdio.h>
-#include "bistree.h"
 #include "list.h"
+#include "bistree.h"
+#include "globals.h"
 #include <stdlib.h>
-#include "heap.h"
+#include <assert.h>
+#include <string.h>
 
-int markRoots(List* roots);
+int markRoots();
 int markTree(BiTreeNode* node);
+int sweep();
+void computeLocations(_block_header* start, _block_header* end, _block_header* toRegion);
+void updateReferences(_block_header* start, _block_header* end);
+void relocate(_block_header* start, _block_header* end);
 
-int sweep(Heap* heap);
-
-void mark_sweep_gc(List* roots, void* heapv) {
-    Heap* heap = (Heap*)heapv;  // TODO: gross
-    printf("Starting gc, before marking\n");
+void mark_sweep_gc() {
     /*
      * mark phase:
      * go throught all roots,
      * traverse trees,
      * mark reachable
      */
-    int marked = markRoots(roots);
-    printf("Number of roots oficial: %d\n", roots->size);
-    printf("Number of roots marked: %d\n", marked);
+    printf("inserted nodes: %d\n", insertedNodes);
+    printf("removed nodes: %d\n", removedNodes);
 
-    int sum = 0;
-    for (int i = 0; i < roots->size; i++) {
-        BisTree* tree = (BisTree*)list_get(roots, i);
-        sum += tree->size;
-    }
-    printf("Total nodes: %d\n", sum);
-    printf("Expected cleanup: %d\n", sum - marked);
+    int markedNodes = markRoots(roots);
+    printf("Marked Nodes: %d\n", markedNodes);
+
+    int sweptNodes = sweep();
+    assert(sweptNodes == removedNodes);
+    printf("Swept Nodes: %d\n", sweptNodes);
+
+    insertedNodes = 0;
+    removedNodes = 0;
 
     /*
      * sweep phase:
      * go through entire heap,
      * add unmarked to free list
      */
-
-    reset_freeb(heap);
-    printf("Before sweep\n");
-    int swept = sweep(heap);
-    printf("Swept nodes: %d\n", swept);
-
     printf("gcing()...\n");
     return;
 }
 
-void mark_compact_gc(List* roots) {
-    /*
-     * mark phase:
-     * go throught all roots,
-     * traverse trees,
-     * mark reachable
-     */
+int markRoots() {
+    int markedNodes = 0;
+    ListNode* node = roots->first;
+    while (node != NULL) {
+        BisTree* tree = (BisTree*)node->data;
+        markedNodes += markTree(tree->root);
+        node = node->next;
+    }
+    return markedNodes;
+}
+
+int markTree(BiTreeNode* node) {
+    if (node == NULL)
+        return 0;
+
+    _block_header* header = GET_HEADER_FROM_NODE(node);
+
+    // TODO: REMOVE
+    if (header->marked == 1) {
+        printf("SANITY CHECK\n");
+        exit(1);
+    }
+
+    header->marked = 1;
+
+    return 1 + markTree(node->left) + markTree(node->right);
+}
+
+int sweep() {
+    _block_header* header = (_block_header*)heap->base;
+    _block_header* top = (_block_header*)heap->limit;
+
+    int total = 0;
+    while (BLOCK_LIMIT(header) < top) {
+        if (header->marked == 0) {
+            total++;
+            add(header);
+        }
+
+        header->marked = 0;
+        header = NEXT_HEADER(header);
+    }
+    return total;
+}
+
+void mark_compact_gc() {
+    printf("inserted nodes: %d\n", insertedNodes);
+    printf("removed nodes: %d\n", removedNodes);
+
+    int markedNodes = markRoots(roots);
+    printf("Marked Nodes: %d\n", markedNodes);
+
+    computeLocations((_block_header*)heap->base, (_block_header*)heap->limit, (_block_header*)heap->base);
+    printf("Computed Locations\n");
+    updateReferences((_block_header*)heap->base, (_block_header*)heap->limit);
+    printf("Updated References\n");
+    relocate((_block_header*)heap->base, (_block_header*)heap->limit);
+    printf("Relocated\n");
+    heap->top = heap->top + sizeof(_block_header) + sizeof(BiTreeNode);
 
     /*
      * compact phase:
@@ -67,7 +116,63 @@ void mark_compact_gc(List* roots) {
     return;
 }
 
-void copy_collection_gc(List* roots) {
+void computeLocations(_block_header* start, _block_header* end, _block_header* toRegion) {
+    _block_header* scan = start;
+    _block_header* free = toRegion;
+    while (BLOCK_LIMIT(scan) < end) {
+        if (scan->marked == 1) {
+            scan->next_free_block = free;
+            free = NEXT_HEADER(free);
+        }
+        scan = NEXT_HEADER(scan);
+    }
+}
+
+void updateReferences(_block_header* start, _block_header* end) {
+    ListNode* root = roots->first;
+    while (root != NULL) {
+        BisTree* tree = (BisTree*)root->data;
+        if (tree->root != NULL) {
+            _block_header* tree_header = GET_HEADER_FROM_NODE((tree->root));
+            tree->root = tree_header->next_free_block;
+        }
+
+        root = root->next;
+    }
+
+    _block_header* scan = start;
+    while (BLOCK_LIMIT(scan) < end) {
+        if (scan->marked == 1) {
+            BiTreeNode* node = GET_NODE_FROM_HEADER(scan);
+            if (node->left != NULL) {
+                _block_header* l = GET_HEADER_FROM_NODE((node->left));
+                node->left = l->next_free_block;
+            }
+
+            if (node->right != NULL) {
+                _block_header* r = GET_HEADER_FROM_NODE((node->right));
+                node->right = r->next_free_block;
+            }
+        }
+        scan = NEXT_HEADER(scan);
+    }
+}
+
+void relocate(_block_header* start, _block_header* end) {
+    _block_header* scan = start;
+    while (BLOCK_LIMIT(scan) < end) {
+        if (scan->marked == 1) {
+            _block_header* dest = scan->next_free_block;
+            memcpy(dest, scan, sizeof(_block_header) + sizeof(BiTreeNode));
+            // printf("Relocating %p to %p\n", scan, dest);
+            heap->top = (char*)dest;
+            dest->marked = 0;
+        }
+        scan = NEXT_HEADER(scan);
+    }
+}
+
+void copy_collection_gc() {
     /*
      * go throught all roots,
      * traverse trees in from_space,
@@ -75,38 +180,4 @@ void copy_collection_gc(List* roots) {
      */
     printf("gcing()...\n");
     return;
-}
-
-int markRoots(List* roots) {
-    int sum = 0;
-    // printf("roots: %d\n", roots->size);
-    for (int i = 0; i < roots->size; i++) {
-        BisTree* tree = (BisTree*)list_get(roots, i);
-        sum += markTree(tree->root);
-        // printf("ola\n");
-    }
-    // printf("OLA\n");
-    return sum;
-}
-
-int markTree(BiTreeNode* node) {
-    if (node == NULL)
-        return 0;
-    _block_header* header = &node - sizeof(_block_header);
-    header->marked = 1;
-    header->size = sizeof(BiTreeNode);
-    return 1 + markTree(node->left) + markTree(node->right);
-}
-
-int sweep(Heap* heap) {
-    _block_header* header = heap->base;
-    int count = 0;
-    while (header < heap->limit) {
-        if (header->marked == 0) {
-            list_addlast(heap->freeb, header);
-            count++;
-        }
-        header += sizeof(_block_header) + sizeof(ListNode);
-    }
-    return count;
 }
