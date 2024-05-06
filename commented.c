@@ -16,6 +16,8 @@ int sweep();
 void computeLocations();
 void updateReferences();
 void relocate();
+void checkNodes(List* roots);
+void checkTree(BiTreeNode* node);
 
 void mark_sweep_gc() {
     /*
@@ -120,6 +122,17 @@ void mark_compact_gc() {
     printf("Computed Locations\n");
 
     printf("Checking if all free blocks are in the heap\n");
+    _block_header* scan = (_block_header*)heap->base;
+    while (BLOCK_LIMIT(scan) < heap->limit) {
+        if (scan->marked == 1 && (scan->next_free_block < (char*)heap->base || BLOCK_LIMIT(scan->next_free_block) > heap->limit || scan->next_free_block == NULL)) {
+            printf("SUS\n");
+            printf("scan->next_free_block: %p\n", scan->next_free_block);
+            printf("heap->base: %p\n", heap->base);
+            printf("heap->limit: %p\n", heap->limit);
+            abort();
+        }
+        scan = NEXT_HEADER(scan);
+    }
 
     updateReferences();
     printf("Updated References\n");
@@ -127,6 +140,38 @@ void mark_compact_gc() {
     relocate();
     printf("Relocated\n");
     heap->top = (char*)NEXT_HEADER((_block_header*)heap->top);
+
+    printf("Checking if all blocks have been marked wiht 0\n");
+    scan = (_block_header*)heap->base;
+    while (BLOCK_LIMIT(scan) < heap->limit) {
+        if (scan->marked == 1) {
+            printf("SUS checked marked\n");
+            printf("scan->next_free_block: %p\n", scan->next_free_block);
+            printf("heap->base: %p\n", heap->base);
+            printf("heap->limit: %p\n", heap->limit);
+            exit(1);
+        }
+        scan = NEXT_HEADER(scan);
+    }
+
+    printf("Checking nodes\n");
+    checkNodes(roots);
+
+    printf("Checking if all blocks have been marked wiht 0 again\n");
+    scan = (_block_header*)heap->base;
+    while (BLOCK_LIMIT(scan) < heap->limit) {
+        if (scan->marked == 1) {
+            printf("SUS\n");
+            printf("scan->next_free_block: %p\n", scan->next_free_block);
+            printf("heap->base: %p\n", heap->base);
+            printf("heap->limit: %p\n", heap->limit);
+            exit(1);
+        }
+        scan = NEXT_HEADER(scan);
+    }
+
+    // printf("ri\n");
+    // exit(1);
 
     /*
      * compact phase:
@@ -138,18 +183,64 @@ void mark_compact_gc() {
     return;
 }
 
+void checkNodes(List* roots) {
+    ListNode* node = roots->first;
+    int t = 0;
+    while (node != NULL) {
+        BisTree* tree = (BisTree*)node->data;
+        // printf("Checking tree %d\n", t++);
+        checkTree(tree->root);
+        node = node->next;
+    }
+}
+
+void checkTree(BiTreeNode* node) {
+    if (node == NULL)
+        return;
+
+    _block_header* header = GET_HEADER_FROM_NODE(node);
+    // TODO: REMOVE
+    if (header->marked == 1) {
+        printf("SUS0\n");
+        printf("header: %p\n", header);
+        printf("SANITY CHECK\n");
+        exit(1);
+    }
+
+    if (node < heap->base || node > heap->limit) {
+        printf("SUS1\n");
+        printf("node: %p\n", node);
+        printf("heap->base: %p\n", heap->base);
+        printf("heap->limit: %p\n", heap->limit);
+        exit(1);
+    }
+
+    if ((((((char*)node) - sizeof(_block_header)) - (heap->base)) % (BLOCK_SIZE)) != 0) {
+        printf("SUS2\n");
+        printf("node: %p\n", (char*)node - sizeof(_block_header));
+        printf("%ld\n", ((((char*)node) - sizeof(_block_header)) - (heap->base)) % (BLOCK_SIZE));
+        exit(1);
+    }
+
+    checkTree(node->left);
+    checkTree(node->right);
+}
+
 void computeLocations() {
     _block_header* scan = (_block_header*)heap->base;
     _block_header* end = (_block_header*)heap->limit;
     _block_header* free = (_block_header*)heap->base;
-
+    int sum = 0;
     while (BLOCK_LIMIT(scan) < (char*)end) {
         if (scan->marked == 1) {
-            scan->next_free_block = (char*)free;
+            scan->next_free_block = free;
             free = NEXT_HEADER(free);
         }
         scan = NEXT_HEADER(scan);
+        sum++;
     }
+
+    printf("sum: %d\n", sum);
 }
 
 void updateReferences() {
@@ -169,10 +260,9 @@ void updateReferences() {
 
     scan = (_block_header*)heap->base;
     limit = (_block_header*)heap->limit;
-    while (BLOCK_LIMIT(scan) < (char*)limit) {
+    while (BLOCK_LIMIT(scan) < limit) {
         if (scan->marked == 1) {
-            // BiTreeNode* node = GET_NODE_FROM_HEADER(scan);
-            BiTreeNode* node = (BiTreeNode*)((char*)scan + sizeof(_block_header));
+            BiTreeNode* node = GET_NODE_FROM_HEADER(scan);
 
             if (node->left != NULL) {
                 _block_header* left_header = GET_HEADER_FROM_NODE(node->left);
@@ -195,7 +285,7 @@ void relocate() {
     int sum = 0;
     while (BLOCK_LIMIT(scan) < (char*)limit) {
         if (scan->marked == 1) {
-            _block_header* dest = (_block_header*)scan->next_free_block;
+            _block_header* dest = scan->next_free_block;
 
             memmove((char*)dest + sizeof(_block_header), (char*)scan + sizeof(_block_header), sizeof(BiTreeNode));
 
@@ -205,8 +295,8 @@ void relocate() {
             dest->marked = 0;
             dest->next_free_block = NULL;
         }
-        // scan->marked = 0;
-        // scan->next_free_block = NULL;
+        scan->marked = 0;
+        scan->next_free_block = NULL;
         scan = NEXT_HEADER(scan);
     }
     printf("relocated: %d\n", sum);

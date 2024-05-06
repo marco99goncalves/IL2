@@ -20,7 +20,8 @@ SRCFLS = mutator.c\
          collector.c\
 	     heap.c\
          bistree.c\
-		 list.c
+		 list.c\
+		 statistics.c
 
 # *  Define the object files.                                                *
 
@@ -28,7 +29,8 @@ OBJFLS = mutator.o\
          collector.o\
          heap.o\
          bistree.o\
-	     list.o
+	     list.o\
+		 statistics.o
 
 # *  Define the executable.                                                  *
 

@@ -26,6 +26,10 @@ void* free_blocks;
 int insertedNodes;
 int removedNodes;
 int garbageCollections;
+int markedNodes;
+int sweptNodes;
+int totalInsertedNodes;
+int totalRemovedNodes;
 
 static bool mutate;
 
@@ -49,6 +53,10 @@ int main(int argc, char** argv) {
     insertedNodes = 0;
     removedNodes = 0;
     garbageCollections = 0;
+    markedNodes = 0;
+    sweptNodes = 0;
+    totalInsertedNodes = 0;
+    totalRemovedNodes = 0;
 
     heap_init(heap, HEAP_SIZE);
     list_init(roots);
@@ -72,13 +80,14 @@ int main(int argc, char** argv) {
                 // printf("Inserting %d\n", key);
                 if (bistree_insert(t, key)) {
                     insertedNodes++;
+                    totalInsertedNodes++;
                 }
             }
 
             // fprintf(stdout, "inserted %d nodes\n", insertedNodes);
             // fprintf(stdout, "tree size is %d\n", bistree_size(t));
             // fprintf(stdout, "(inorder traversal)\n");
-            bistree_inorder(t);
+            // bistree_inorder(t);
         } else {  // remove nodes
             /* skip if there are no roots to manipulate */
             if (list_isempty(roots))
@@ -91,13 +100,15 @@ int main(int argc, char** argv) {
             for (int i = 0; i < number_tries; i++) {
                 /* remove key from tree if key exists in it */
                 /* this is checked in bistree_remove */
-                if (bistree_remove(chosen, random() % MAX_KEY_VALUE))
+                if (bistree_remove(chosen, random() % MAX_KEY_VALUE)) {
                     removedNodes++;
+                    totalRemovedNodes++;
+                }
             }
             // fprintf(stdout, "removed %d nodes\n", removedNodes);
             // fprintf(stdout, "tree size is %d\n", bistree_size(chosen));
             // fprintf(stdout, "(inorder traversal)\n");
-            bistree_inorder(chosen);
+            // bistree_inorder(chosen);
         }
     }
     /* caught ^C ! */

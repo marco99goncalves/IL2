@@ -11,6 +11,6 @@ void mark_compact_gc();
 
 void copy_collection_gc();
 
-void generational_gc(...);
+void generational_gc();
 
 #endif
