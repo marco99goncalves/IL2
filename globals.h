@@ -5,10 +5,39 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#include "heap.h"
 #include "list.h"
+#include "heap.h"
 
-extern List* roots;
-extern Heap* heap;
+#define GET_HEADER_FROM_NODE(node) \
+    (((_block_header *)(node)) - 1)
+
+#define GET_NODE_FROM_HEADER(header) \
+    (((BiTreeNode *)((header) + 1)))
+
+#define NEXT_HEADER(header) \
+    ((_block_header *)(((char *)header) + sizeof(_block_header) + ((_block_header *)header)->size))
+
+#define BLOCK_SIZE \
+    (sizeof(_block_header) + sizeof(BiTreeNode))
+
+#define BLOCKS_IN_HEAP \
+    ((heap->limit - heap->base) / (BLOCK_SIZE))
+
+#define GC_ALGORITHM 2
+
+extern List *roots;
+extern Heap *heap;
+extern void *free_blocks;
+
+// These are purely for debugging and printing statistics
+#define PRINT_STATISTICS 1
+
+extern int insertedNodes;
+extern int removedNodes;
+extern int garbageCollections;
+extern int markedNodes;
+extern int sweptNodes;
+extern int totalInsertedNodes;
+extern int totalRemovedNodes;
 
 #endif

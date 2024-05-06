@@ -20,7 +20,8 @@ SRCFLS = mutator.c\
          collector.c\
 	     heap.c\
          bistree.c\
-		 list.c
+		 list.c\
+		 statistics.c
 
 # *  Define the object files.                                                *
 
@@ -28,7 +29,8 @@ OBJFLS = mutator.o\
          collector.o\
          heap.o\
          bistree.o\
-	     list.o
+	     list.o\
+		 statistics.o
 
 # *  Define the executable.                                                  *
 
@@ -38,7 +40,7 @@ EXE    = mutator
 
 CC     = gcc
 LL     = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall
 LFLAGS =
 
 # *  Define the rules.                                                       *
@@ -57,6 +59,7 @@ clean:
 	-rm $(EXE)
 	-rm $(OBJFLS)
 
+# DO NOT DELETE THIS LINE -- make depend depends on it.
 
 mutator.o: bool.h globals.h list.h bistree.h bistree.c
 heap.o: heap.h globals.h heap.c

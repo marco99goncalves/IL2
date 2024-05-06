@@ -2,13 +2,13 @@
  * bistree.c
  */
 
-#include "bistree.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "bool.h"
+#include "bistree.h"
 #include "heap.h"
+#include "globals.h"
 
 void bistree_init(BisTree* tree) {
     tree->root = NULL;
@@ -30,25 +30,33 @@ bool bistree_lookup(BisTree* tree, int data) {
     return bitreenode_lookup(tree->root, data);
 }
 
-BiTreeNode* bitreenode_insert(BiTreeNode* node, int data) {
+BiTreeNode* bitreenode_insert(BiTreeNode* node, int data, char* malloc_ptr) {
     if (node == NULL) {
-        BiTreeNode* node = (BiTreeNode*)my_malloc(sizeof(BiTreeNode));
+        BiTreeNode* node = (BiTreeNode*)malloc_ptr;
+
         node->data = data;
         node->left = NULL;
         node->right = NULL;
         return node;
     } else if (data < node->data)
-        node->left = bitreenode_insert(node->left, data);
+        node->left = bitreenode_insert(node->left, data, malloc_ptr);
     else
-        node->right = bitreenode_insert(node->right, data);
+        node->right = bitreenode_insert(node->right, data, malloc_ptr);
     return node;
 }
 
 bool bistree_insert(BisTree* tree, int data) {
-    if (bistree_lookup(tree, data))
-        return false;
-    tree->root = bitreenode_insert(tree->root, data);
+    if (bistree_lookup(tree, data)) return false;
+
+    char* malloc_ptr = my_malloc(sizeof(BiTreeNode));
+    if (malloc_ptr == NULL) {
+        printf("Could not allocate memory for new node\n");
+        exit(1);
+    }
+
+    tree->root = bitreenode_insert(tree->root, data, malloc_ptr);
     tree->size = tree->size + 1;
+
     return true;
 }
 
@@ -67,7 +75,7 @@ BiTreeNode* bitreenode_remove(BiTreeNode* node, int data) {
             lnode = lnode->right;
         node->data = lnode->data;
         node->left = bitreenode_remove(node->left, lnode->data);
-        // free(lnode);
+        //   free(lnode);
     }
     return node;
 }
@@ -89,7 +97,8 @@ void bitreenode_inorder(BiTreeNode* node) {
 }
 
 void bistree_inorder(BisTree* tree) {
-    printf("root: %p\n", tree);
+    printf("base: %p\n", heap->base);
+    printf("root: %p\n", tree->root);
     bitreenode_inorder(tree->root);
     printf("\n");
 }
