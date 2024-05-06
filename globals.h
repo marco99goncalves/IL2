@@ -15,10 +15,7 @@
     (((BiTreeNode *)((header) + 1)))
 
 #define NEXT_HEADER(header) \
-    ((_block_header *)(((BiTreeNode *)((header) + 1)) + 1))
-
-#define BLOCK_LIMIT(block) \
-    (((char *)(block)) + sizeof(_block_header) + sizeof(BiTreeNode))
+    ((_block_header *)(((char *)header) + sizeof(_block_header) + ((_block_header *)header)->size))
 
 #define BLOCK_SIZE \
     (sizeof(_block_header) + sizeof(BiTreeNode))
@@ -26,7 +23,7 @@
 #define BLOCKS_IN_HEAP \
     ((heap->limit - heap->base) / (BLOCK_SIZE))
 
-#define GC_ALGORITHM 1
+#define GC_ALGORITHM 2
 
 extern List *roots;
 extern Heap *heap;
