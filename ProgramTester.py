@@ -29,7 +29,9 @@ if __name__ == "__main__":
     
     start_time = time.time()
 
+    times = []
     for algorithm in algorithms:
+        algorithmTime = time.time()
         print("=====================================")
         print(f"Running with algorithm {algorithm}")
         for probability in probabilities:
@@ -48,7 +50,8 @@ if __name__ == "__main__":
                     print(Fore.RED + f"Run {run_number}: {error}" + Style.RESET_ALL)
             print("=====================================\n")
         print("=====================================")
-
+        algorithmTime = time.time() - algorithmTime
+        times.append(algorithmTime)
     
 
     end_time = time.time()
@@ -59,4 +62,7 @@ if __name__ == "__main__":
     print(f"Total successful runs: {Fore.GREEN}{totalSucess}" + Style.RESET_ALL)
     print(f"Total crashes: {Fore.RED}{totalCrash}" + Style.RESET_ALL)
     print(f"Total time taken: {round(total_time, 2)} seconds")
+    for i in range(len(times)):
+        print(f"Time taken for algorithm {i}: {round(times[i], 2)} seconds")
+        print(f"Time per run: {round(times[i]/n_times, 2)} seconds")
     print("=====================================")
