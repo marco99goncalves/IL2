@@ -40,8 +40,8 @@ EXE    = mutator
 
 CC     = gcc
 LL     = gcc
-CFLAGS = -Wall
-LFLAGS =
+CFLAGS = -Wall 
+LFLAGS =  
 
 # *  Define the rules.                                                       *
 

@@ -13,6 +13,9 @@
 #include "bistree.h"
 
 void heap_init(Heap* heap, unsigned int size) {
+    // if (GC_ALGORITHM == COPY_COLLECT)
+    // size *= 2;
+
     heap->base = mmap(NULL, size, PROT_READ | PROT_WRITE,
                       MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
     heap->size = size;
@@ -21,15 +24,19 @@ void heap_init(Heap* heap, unsigned int size) {
     free_blocks = NULL;
 
     switch (GC_ALGORITHM) {
-        case 0:
+        case MARK_AND_SWEEP:
             heap->collector = mark_sweep_gc;
             break;
-        case 1:
+        case MARK_AND_COMPACT:
             heap->collector = mark_compact_gc;
+            break;
+        case COPY_COLLECT:
+            heap->collector = copy_collection_gc;
+            create_semi_spaces();
             break;
         default:
             printf("Something went wrong when choosing a GC algoritm\n");
-            exit(1);
+            abort();
             break;
     }
     return;
@@ -50,7 +57,7 @@ void* my_malloc(unsigned int nbytes) {
         return p;
     } else {
         switch (GC_ALGORITHM) {
-            case 0: {
+            case MARK_AND_SWEEP: {
                 if (free_blocks != NULL) {
                     _block_header* q = free_blocks;
                     q->marked = 0;
@@ -62,7 +69,7 @@ void* my_malloc(unsigned int nbytes) {
                 }
 
                 garbageCollections++;
-                printf("my_malloc: not enough space, performing GC... (%d)\n", garbageCollections);
+                // printf("my_malloc: not enough space, performing GC... (%d)\n", garbageCollections);
 
                 char* p = my_malloc_mark_and_sweep(nbytes);
                 if (PRINT_STATISTICS)
@@ -70,9 +77,9 @@ void* my_malloc(unsigned int nbytes) {
                 return p;
                 break;
             }
-            case 1: {
+            case MARK_AND_COMPACT: {
                 garbageCollections++;
-                printf("my_malloc: not enough space, performing GC... (%d)\n", garbageCollections);
+                // printf("my_malloc: not enough space, performing GC... (%d)\n", garbageCollections);
 
                 char* p = my_malloc_mark_and_compact(nbytes);
 
@@ -82,14 +89,14 @@ void* my_malloc(unsigned int nbytes) {
                 return p;
                 break;
             }
-            case 2: {
+            case COPY_COLLECT: {
                 garbageCollections++;
-                printf("my_malloc: not enough space, performing GC... (%d)\n", garbageCollections);
+                // printf("my_malloc: not enough space, performing GC... (%d)\n", garbageCollections);
 
                 char* p = my_malloc_copy_collect(nbytes);
 
                 if (PRINT_STATISTICS)
-                    print_copy_collect_statistics();
+                    print_copy_collection_statistics();
 
                 return p;
 
@@ -107,7 +114,7 @@ void* my_malloc_mark_and_sweep(unsigned int nbytes) {
     heap->collector();
 
     if (free_blocks == NULL) {
-        printf("my_malloc: not enough space after GC...\n");
+        printf("%smy_malloc: not enough space after GC...%s\n\n", RED, NORMAL);
         return NULL;
     }
 
@@ -125,7 +132,7 @@ void* my_malloc_mark_and_compact(unsigned int nbytes) {
     heap->collector();
 
     if (heap->top + sizeof(_block_header) + nbytes > heap->limit) {
-        printf("my_malloc: not enough space after GC...\n");
+        printf("%smy_malloc: not enough space after GC...%s\n\n", RED, NORMAL);
         return NULL;
     }
 
@@ -143,7 +150,7 @@ void* my_malloc_copy_collect(unsigned int nbytes) {
     heap->collector();
 
     if (heap->top + sizeof(_block_header) + nbytes > heap->limit) {
-        printf("my_malloc: not enough space after GC...\n");
+        printf("%smy_malloc: not enough space after GC...%s\n\n", RED, NORMAL);
         return NULL;
     }
 

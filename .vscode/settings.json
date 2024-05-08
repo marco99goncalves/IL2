@@ -4,6 +4,8 @@
         "globals.h": "c",
         "list.h": "c",
         "bool.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "type_traits": "c",
+        "statistics.h": "c"
     }
 }

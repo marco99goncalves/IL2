@@ -10,6 +10,7 @@ void mark_sweep_gc();
 void mark_compact_gc();
 
 void copy_collection_gc();
+void create_semi_spaces();
 
 void generational_gc();
 

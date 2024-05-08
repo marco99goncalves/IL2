@@ -10,12 +10,30 @@
 #include <assert.h>
 #include <string.h>
 
+// Helper functions
+
+// General
 int markRoots();
 int markTree(BiTreeNode* node);
+
+// Mark and Sweep
 int sweep();
+
+// Mark and Compact
 char* computeLocations();
 void updateReferences();
 void relocate();
+
+// Copy and Collect
+void flip();
+void swap(char** a, char** b);
+char* forward(BiTreeNode* node);
+char* copy(BiTreeNode* node);
+void scan(char* ref);
+
+void initialize_list();
+bool is_list_empty();
+char* remove_from_list();
 
 void mark_sweep_gc() {
     /*
@@ -33,7 +51,7 @@ void mark_sweep_gc() {
      * go through entire heap,
      * add unmarked to free list
      */
-    printf("gcing()...\n");
+    // printf("\n\n\n");
     return;
 }
 
@@ -93,7 +111,7 @@ void mark_compact_gc() {
      * compute new addresses
      * copy objects to new addresses
      */
-    printf("gcing()...\n");
+    // printf("\n\n\n");
     return;
 }
 
@@ -164,12 +182,92 @@ void relocate() {
     }
 }
 
+void create_semi_spaces() {
+    heap->toSpace = heap->base;
+    heap->extent = (heap->limit - heap->base) / 2;
+    heap->fromSpace = heap->base + heap->extent;
+    heap->limit = heap->fromSpace;
+    heap->top = heap->toSpace;
+}
+
 void copy_collection_gc() {
     /*
      * go throught all roots,
      * traverse trees in from_space,
      * copy reachable to to_space
      */
-    printf("gcing()...\n");
+
+    flip();
+
+    initialize_list();
+
+    ListNode* root = roots->first;
+    int sum = 0;
+    while (root != NULL) {
+        BisTree* tree = (BisTree*)root->data;
+        if (tree->root != NULL) {
+            tree->root = GET_NODE_FROM_HEADER((_block_header*)forward(tree->root));
+        } else {
+            sum++;
+        }
+
+        root = root->next;
+    }
+
+    while (!is_list_empty()) {
+        _block_header* ref = (_block_header*)remove_from_list();
+
+        BiTreeNode* node = GET_NODE_FROM_HEADER(ref);
+        if (node->left != NULL)
+            node->left = GET_NODE_FROM_HEADER((_block_header*)forward(node->left));
+
+        if (node->right != NULL)
+            node->right = GET_NODE_FROM_HEADER((_block_header*)forward(node->right));
+    }
+
     return;
+}
+
+char* forward(BiTreeNode* node) {
+    char* toRef = GET_HEADER_FROM_NODE(node)->next_free_block;
+    if (toRef == NULL)
+        toRef = copy(node);
+
+    return toRef;
+}
+
+char* copy(BiTreeNode* node) {
+    char* toRef = heap->top;
+    _block_header* nodeHeader = GET_HEADER_FROM_NODE(node);
+    heap->top = (char*)NEXT_HEADER(heap->top);  // TODO: Check why NEXT_HEADER DOESNT WORK
+
+    memmove(toRef, nodeHeader, sizeof(_block_header) + nodeHeader->size);
+    // nodeHeader->next_free_block = toRef;
+    return toRef;
+}
+
+void flip() {
+    swap(&heap->fromSpace, &heap->toSpace);
+    heap->limit = heap->toSpace + heap->extent;
+    heap->top = heap->toSpace;
+}
+
+void swap(char** a, char** b) {
+    char* temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void initialize_list() {
+    heap->free = heap->top;
+}
+
+bool is_list_empty() {
+    return heap->free == heap->top;
+}
+
+char* remove_from_list() {
+    char* ref = heap->free;
+    heap->free = (char*)NEXT_HEADER(heap->free);
+    return ref;
 }

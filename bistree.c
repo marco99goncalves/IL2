@@ -51,7 +51,7 @@ bool bistree_insert(BisTree* tree, int data) {
     char* malloc_ptr = my_malloc(sizeof(BiTreeNode));
     if (malloc_ptr == NULL) {
         printf("Could not allocate memory for new node\n");
-        exit(1);
+        exit(0);
     }
 
     tree->root = bitreenode_insert(tree->root, data, malloc_ptr);

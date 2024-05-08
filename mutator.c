@@ -31,6 +31,8 @@ int sweptNodes;
 int totalInsertedNodes;
 int totalRemovedNodes;
 
+int GC_ALGORITHM = COPY_COLLECT;
+
 static bool mutate;
 
 static void sigint_handler() {
@@ -45,6 +47,9 @@ int main(int argc, char** argv) {
         printf("signal: cannot install handler for SIGINT\n");
         return 1;
     }
+
+    if (argc == 3)
+        GC_ALGORITHM = atoi(argv[2]);
 
     float threshold = atof(argv[1]); /* a value in the interval (0,1) */
 

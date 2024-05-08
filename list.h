@@ -8,13 +8,13 @@
 #include "bool.h"
 
 typedef struct ListNode_ {
-   void*               data;
-   struct ListNode_*   next;
+    void* data;
+    struct ListNode_* next;
 } ListNode;
 
 typedef struct List_ {
-   int                 size;
-   ListNode*           first;
+    int size;
+    ListNode* first;
 } List;
 
 void list_init(List* list);
@@ -39,4 +39,5 @@ void list_removelast(List* list);
 
 void list_print(List* list);
 
+void list_free(List* list);
 #endif
