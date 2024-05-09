@@ -17,25 +17,25 @@ int markRoots();
 int markTree(BiTreeNode* node);
 
 // Mark and Sweep
-int sweep();
+int sweep(Heap* heap);
 
 // Mark and Compact
-char* computeLocations();
-void updateReferences();
-void relocate();
+char* computeLocations(Heap* heap);
+void updateReferences(Heap* heap);
+void relocate(Heap* heap);
 
 // Copy and Collect
-void flip();
+void create_semi_spaces(Heap* heap);
+void flip(Heap* heap);
 void swap(char** a, char** b);
 char* forward(BiTreeNode* node);
-char* copy(BiTreeNode* node);
-void scan(char* ref);
+char* copy(BiTreeNode* node, Heap* heap);
 
-void initialize_list();
-bool is_list_empty();
-char* remove_from_list();
+void initialize_list(Heap* heap);
+bool is_list_empty(Heap* heap);
+char* remove_from_list(Heap* heap);
 
-void mark_sweep_gc() {
+void mark_sweep_gc(Heap* heap) {
     /*
      * mark phase:
      * go throught all roots,
@@ -44,7 +44,7 @@ void mark_sweep_gc() {
      */
     markedNodes = markRoots(roots);
 
-    sweptNodes = sweep();
+    sweptNodes = sweep(heap);
 
     /*
      * sweep phase:
@@ -77,7 +77,7 @@ int markTree(BiTreeNode* node) {
     return 1 + markTree(node->left) + markTree(node->right);
 }
 
-int sweep() {
+int sweep(Heap* heap) {
     _block_header* header = (_block_header*)heap->base;
     _block_header* top = (_block_header*)heap->top;
 
@@ -94,14 +94,14 @@ int sweep() {
     return total;
 }
 
-void mark_compact_gc() {
+void mark_compact_gc(Heap* heap) {
     markedNodes = markRoots(roots);
 
-    char* next_heap_top = computeLocations();
+    char* next_heap_top = computeLocations(heap);
 
-    updateReferences();
+    updateReferences(heap);
 
-    relocate();
+    relocate(heap);
 
     heap->top = (char*)NEXT_HEADER((_block_header*)next_heap_top);
 
@@ -115,7 +115,7 @@ void mark_compact_gc() {
     return;
 }
 
-char* computeLocations() {
+char* computeLocations(Heap* heap) {
     _block_header* scan = (_block_header*)heap->base;
     _block_header* end = (_block_header*)heap->top;
     _block_header* free = (_block_header*)heap->base;
@@ -130,7 +130,7 @@ char* computeLocations() {
     return (char*)free;
 }
 
-void updateReferences() {
+void updateReferences(Heap* heap) {
     ListNode* root = roots->first;
     _block_header* scan = (_block_header*)heap->base;
     _block_header* end = (_block_header*)heap->top;
@@ -164,7 +164,7 @@ void updateReferences() {
     }
 }
 
-void relocate() {
+void relocate(Heap* heap) {
     _block_header* scan = (_block_header*)heap->base;
     _block_header* end = (_block_header*)heap->limit;
 
@@ -182,7 +182,7 @@ void relocate() {
     }
 }
 
-void create_semi_spaces() {
+void create_semi_spaces(Heap* heap) {
     heap->toSpace = heap->base;
     heap->extent = (heap->limit - heap->base) / 2;
     heap->fromSpace = heap->base + heap->extent;
@@ -190,16 +190,16 @@ void create_semi_spaces() {
     heap->top = heap->toSpace;
 }
 
-void copy_collection_gc() {
+void copy_collection_gc(Heap* heap) {
     /*
      * go throught all roots,
      * traverse trees in from_space,
      * copy reachable to to_space
      */
 
-    flip();
+    flip(heap);
 
-    initialize_list();
+    initialize_list(heap);
 
     ListNode* root = roots->first;
     int sum = 0;
@@ -214,8 +214,8 @@ void copy_collection_gc() {
         root = root->next;
     }
 
-    while (!is_list_empty()) {
-        _block_header* ref = (_block_header*)remove_from_list();
+    while (!is_list_empty(heap)) {
+        _block_header* ref = (_block_header*)remove_from_list(heap);
 
         BiTreeNode* node = GET_NODE_FROM_HEADER(ref);
         if (node->left != NULL)
@@ -231,12 +231,12 @@ void copy_collection_gc() {
 char* forward(BiTreeNode* node) {
     char* toRef = GET_HEADER_FROM_NODE(node)->next_free_block;
     if (toRef == NULL)
-        toRef = copy(node);
+        toRef = copy(node, heap);
 
     return toRef;
 }
 
-char* copy(BiTreeNode* node) {
+char* copy(BiTreeNode* node, Heap* heap) {
     char* toRef = heap->top;
     _block_header* nodeHeader = GET_HEADER_FROM_NODE(node);
     heap->top = (char*)NEXT_HEADER(heap->top);  // TODO: Check why NEXT_HEADER DOESNT WORK
@@ -246,7 +246,7 @@ char* copy(BiTreeNode* node) {
     return toRef;
 }
 
-void flip() {
+void flip(Heap* heap) {
     swap(&heap->fromSpace, &heap->toSpace);
     heap->limit = heap->toSpace + heap->extent;
     heap->top = heap->toSpace;
@@ -258,16 +258,22 @@ void swap(char** a, char** b) {
     *b = temp;
 }
 
-void initialize_list() {
+void initialize_list(Heap* heap) {
     heap->free = heap->top;
 }
 
-bool is_list_empty() {
+bool is_list_empty(Heap* heap) {
     return heap->free == heap->top;
 }
 
-char* remove_from_list() {
+char* remove_from_list(Heap* heap) {
     char* ref = heap->free;
     heap->free = (char*)NEXT_HEADER(heap->free);
     return ref;
+}
+
+void generational_gc() {
+    printf("%sNOT IMPLEMENTED YET%s\n", RED, NORMAL);
+
+    return;
 }

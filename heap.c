@@ -32,7 +32,10 @@ void heap_init(Heap* heap, unsigned int size) {
             break;
         case COPY_COLLECT:
             heap->collector = copy_collection_gc;
-            create_semi_spaces();
+            create_semi_spaces(heap);
+            break;
+        case GENERATIONAL:
+            heap->collector = generational_gc;
             break;
         default:
             printf("Something went wrong when choosing a GC algoritm\n");
@@ -102,6 +105,19 @@ void* my_malloc(unsigned int nbytes) {
 
                 break;
             }
+            case GENERATIONAL: {
+                garbageCollections++;
+                // printf("my_malloc: not enough space, performing GC... (%d)\n", garbageCollections);
+
+                char* p = my_malloc_generational(nbytes);
+
+                if (PRINT_STATISTICS)
+                    print_generational_statistics();
+
+                return p;
+
+                break;
+            }
             default:
                 printf("Something went wrong choosing a malloc() function\n");
                 return NULL;
@@ -111,7 +127,7 @@ void* my_malloc(unsigned int nbytes) {
 }
 
 void* my_malloc_mark_and_sweep(unsigned int nbytes) {
-    heap->collector();
+    mark_sweep_gc(heap);
 
     if (free_blocks == NULL) {
         printf("%smy_malloc: not enough space after GC...%s\n\n", RED, NORMAL);
@@ -129,7 +145,7 @@ void* my_malloc_mark_and_sweep(unsigned int nbytes) {
 }
 
 void* my_malloc_mark_and_compact(unsigned int nbytes) {
-    heap->collector();
+    heap->collector(heap);
 
     if (heap->top + sizeof(_block_header) + nbytes > heap->limit) {
         printf("%smy_malloc: not enough space after GC...%s\n\n", RED, NORMAL);
@@ -147,7 +163,25 @@ void* my_malloc_mark_and_compact(unsigned int nbytes) {
 }
 
 void* my_malloc_copy_collect(unsigned int nbytes) {
-    heap->collector();
+    heap->collector(heap);
+
+    if (heap->top + sizeof(_block_header) + nbytes > heap->limit) {
+        printf("%smy_malloc: not enough space after GC...%s\n\n", RED, NORMAL);
+        return NULL;
+    }
+
+    _block_header* q = (_block_header*)heap->top;
+    q->marked = 0;
+    q->size = nbytes;
+    char* p = heap->top + sizeof(_block_header);
+
+    heap->top = heap->top + sizeof(_block_header) + nbytes;
+
+    return p;
+}
+
+void* my_malloc_generational(unsigned int nbytes) {
+    heap->collector(heap);
 
     if (heap->top + sizeof(_block_header) + nbytes > heap->limit) {
         printf("%smy_malloc: not enough space after GC...%s\n\n", RED, NORMAL);

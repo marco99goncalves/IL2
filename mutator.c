@@ -31,7 +31,7 @@ int sweptNodes;
 int totalInsertedNodes;
 int totalRemovedNodes;
 
-int GC_ALGORITHM = COPY_COLLECT;
+int GC_ALGORITHM = GENERATIONAL;
 
 static bool mutate;
 

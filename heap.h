@@ -19,19 +19,20 @@ typedef struct {
     char* next_free_block;
 } _block_header;
 
-typedef struct {
+typedef struct Heap Heap;
+struct Heap {
     unsigned int size;
     char* base;
     char* top;
     char* limit;
-    void (*collector)();
+    void (*collector)(Heap* heap);
 
     // Used for the copy collect
     char* fromSpace;
     char* toSpace;
     size_t extent;
     char* free;
-} Heap;
+};
 
 void heap_init(Heap* heap, unsigned int size);
 
@@ -41,6 +42,7 @@ void* my_malloc(unsigned int nbytes);
 void* my_malloc_mark_and_sweep(unsigned int nbytes);
 void* my_malloc_mark_and_compact(unsigned int nbytes);
 void* my_malloc_copy_collect(unsigned int nbytes);
+void* my_malloc_generational(unsigned int nbytes);
 void* get_block_and_advance_heap_top(_block_header** block, unsigned int nbytes);
 
 void add(_block_header* block);
