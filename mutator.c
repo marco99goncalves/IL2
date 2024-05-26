@@ -18,7 +18,7 @@
 #define MIN_NODES 5
 #define MAX_KEY_VALUE 100
 
-#define HEAP_SIZE (1024 * 1024) /* 1 MByte */
+#define HEAP_SIZE (1024 * 1024 * 1) /* 1 MByte */
 
 Heap* heap;
 List* roots;
@@ -31,7 +31,7 @@ int sweptNodes;
 int totalInsertedNodes;
 int totalRemovedNodes;
 
-int GC_ALGORITHM = GENERATIONAL;
+int GC_ALGORITHM = MARK_AND_SWEEP;
 
 static bool mutate;
 

@@ -20,7 +20,6 @@
 #define MARK_AND_SWEEP 0
 #define MARK_AND_COMPACT 1
 #define COPY_COLLECT 2
-#define GENERATIONAL 3
 
 #define GET_HEADER_FROM_NODE(node) \
     (((_block_header *)(node)) - 1)

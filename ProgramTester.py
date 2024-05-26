@@ -10,7 +10,6 @@ def run_program(algorithm, probability, n_times):
     for i in range(n_times):
         try:
             result = subprocess.run(command, check=True, text=True, capture_output=True)
-            # print(Fore.GREEN + f"Algorithm {algorithm}, Probability {probability}, Run {i+1}: Success" + Style.RESET_ALL)
         except subprocess.CalledProcessError as e:
             crash_count += 1
             errors.append((i+1, e.stderr.strip()))
@@ -21,7 +20,7 @@ def run_program(algorithm, probability, n_times):
 if __name__ == "__main__":
     probabilities = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     algorithms = [0, 1, 2]
-    n_times = 100
+    n_times = 1000
     totalSucess = 0
     totalCrash = 0
     start_time = time.time()

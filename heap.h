@@ -42,7 +42,6 @@ void* my_malloc(unsigned int nbytes);
 void* my_malloc_mark_and_sweep(unsigned int nbytes);
 void* my_malloc_mark_and_compact(unsigned int nbytes);
 void* my_malloc_copy_collect(unsigned int nbytes);
-void* my_malloc_generational(unsigned int nbytes);
 void* get_block_and_advance_heap_top(_block_header** block, unsigned int nbytes);
 
 void add(_block_header* block);

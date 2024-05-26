@@ -36,22 +36,9 @@ bool is_list_empty(Heap* heap);
 char* remove_from_list(Heap* heap);
 
 void mark_sweep_gc(Heap* heap) {
-    /*
-     * mark phase:
-     * go throught all roots,
-     * traverse trees,
-     * mark reachable
-     */
     markedNodes = markRoots(roots);
 
     sweptNodes = sweep(heap);
-
-    /*
-     * sweep phase:
-     * go through entire heap,
-     * add unmarked to free list
-     */
-    // printf("\n\n\n");
     return;
 }
 
@@ -104,14 +91,6 @@ void mark_compact_gc(Heap* heap) {
     relocate(heap);
 
     heap->top = (char*)NEXT_HEADER((_block_header*)next_heap_top);
-
-    /*
-     * compact phase:
-     * go through entire heap,
-     * compute new addresses
-     * copy objects to new addresses
-     */
-    // printf("\n\n\n");
     return;
 }
 
@@ -148,7 +127,6 @@ void updateReferences(Heap* heap) {
     while (scan < end) {
         if (scan->marked == 1) {
             BiTreeNode* node = GET_NODE_FROM_HEADER(scan);
-            // BiTreeNode* node = (BiTreeNode*)((char*)scan + sizeof(_block_header));
 
             if (node->left != NULL) {
                 _block_header* left_header = GET_HEADER_FROM_NODE(node->left);
@@ -191,12 +169,6 @@ void create_semi_spaces(Heap* heap) {
 }
 
 void copy_collection_gc(Heap* heap) {
-    /*
-     * go throught all roots,
-     * traverse trees in from_space,
-     * copy reachable to to_space
-     */
-
     flip(heap);
 
     initialize_list(heap);
@@ -239,10 +211,9 @@ char* forward(BiTreeNode* node) {
 char* copy(BiTreeNode* node, Heap* heap) {
     char* toRef = heap->top;
     _block_header* nodeHeader = GET_HEADER_FROM_NODE(node);
-    heap->top = (char*)NEXT_HEADER(heap->top);  // TODO: Check why NEXT_HEADER DOESNT WORK
+    heap->top = (char*)NEXT_HEADER(heap->top);
 
     memmove(toRef, nodeHeader, sizeof(_block_header) + nodeHeader->size);
-    // nodeHeader->next_free_block = toRef;
     return toRef;
 }
 
@@ -270,10 +241,4 @@ char* remove_from_list(Heap* heap) {
     char* ref = heap->free;
     heap->free = (char*)NEXT_HEADER(heap->free);
     return ref;
-}
-
-void generational_gc() {
-    printf("%sNOT IMPLEMENTED YET%s\n", RED, NORMAL);
-
-    return;
 }
